@@ -4,10 +4,10 @@ const express = require('express'),
     bcrypt = require('bcrypt'),
     authorize = require('../../auth/auth'),
     BCRYPT_SALT_ROUNDS = parseInt(process.env.BCRYPT_SALT_ROUNDS),
-    jwt= require('jsonwebtoken'),
+    jwt = require('jsonwebtoken'),
     jwtKey = process.env.JWTKEY,
     jwtExpire = process.env.JWTEXPIRE;
-    
+
 
 /**
  * POST
@@ -19,15 +19,12 @@ const express = require('express'),
 router.post('/register', (req, res) => {
     let username = req.body.username;
     let password = req.body.password;
-    let userLevel = req.body.level;
-    let money = req.body.password;
-    let data;
     bcrypt.hash(password, BCRYPT_SALT_ROUNDS)
         .then(hash => {
             let user = new User({
                 username: username,
                 password: hash,
-                userLevel: 2,
+                userLevel: 0,
                 money: 0
             });
             user.save((err, result) => {
@@ -36,8 +33,8 @@ router.post('/register', (req, res) => {
                         err: err
                     });
                 }
-                const token = jwt.sign({username},jwtKey,{
-                    algorithm:'HS256',
+                const token = jwt.sign({ username }, jwtKey, {
+                    algorithm: 'HS256',
                     expiresIn: jwtExpire * 1000
                 })
                 res.status(200).json({
@@ -46,7 +43,7 @@ router.post('/register', (req, res) => {
                 }
                 );
             })
-            
+
         });
 });
 
@@ -59,7 +56,7 @@ router.post('/login', (req, res) => {
     let username = req.body.username;
     let password = req.body.password;
     let data;
-    User.find({username: username})
+    User.find({ username: username })
         .then(user => {
             data = user[0]
             return bcrypt.compare(password, user[0].password);
@@ -68,8 +65,8 @@ router.post('/login', (req, res) => {
             if (!passwordMatch) {
                 res.status(403).send();
             }
-            const token = jwt.sign({username},jwtKey,{
-                algorithm:'HS256',
+            const token = jwt.sign({ username }, jwtKey, {
+                algorithm: 'HS256',
                 expiresIn: jwtExpire * 1000
             })
             res.status(200).json({
@@ -83,14 +80,14 @@ router.post('/login', (req, res) => {
         })
 });
 
-router.get('/:username', (req, res) => {
-    let username =  req.params.username;
+router.get('/find/:username', (req, res) => {
+    let username = req.params.username;
 
 
     User.find({
         username: username
     }, (err, doc) => {
-        if(err) {
+        if (err) {
             res.status(500).json({
                 err: err
             });
@@ -98,6 +95,60 @@ router.get('/:username', (req, res) => {
         res.status(200).json({
             response: doc
         });
+    });
+});
+
+// ":" is to reference the actual user we are updating
+router.post('/find/:user/update/money', (req, res) => {
+    let money = req.body.money;
+    let user = req.params.user;
+    User.findOneAndUpdate(
+        { username: user },
+        { $set: { money: money } },
+        { new: true },
+        (err, doc) => {
+            if (err) {
+                res.status(500).json({
+                    err: err
+                });
+            }
+            res.status(200).json({
+                response: doc
+            });
+        });
+})
+
+router.post('/find/:user/update/level', (req, res) => {
+    let userLevel = req.body.userLevel;
+    let user = req.params.user;
+    User.findOneAndUpdate(
+        { username: user },
+        { $set: { userLevel: userLevel } },
+        { new: true },
+        (err, doc) => {
+            if (err) {
+                res.status(500).json({
+                    err: err
+                });
+            }
+            res.status(200).json({
+                response: doc
+            });
+        });
+})
+
+router.get('/all', (req, res) => {
+    User.find({
+
+    }, (err, doc) => {
+        if (err) {
+            res.status(500).json({
+                err: err
+            });
+        }
+        res.status(200).json(
+            doc
+        );
     });
 });
 
