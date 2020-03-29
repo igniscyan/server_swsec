@@ -45,7 +45,6 @@ app.use(bodyParser.urlencoded({ extended: true })); // for parsing application/x
  */
 app.use('/users', users);
 
-
 /**
  * listen on port
  */
